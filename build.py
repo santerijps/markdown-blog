@@ -1,7 +1,25 @@
 from glob import glob
-from subprocess import run, DEVNULL
+from subprocess import run
 from typing import IO
 import os
+
+
+class Pandoc:
+
+  def __init__(self, src_file_path: str, dst_file_path: str) -> None:
+    self.cmd = ['pandoc']
+    self.src_file_path = src_file_path
+    self.dst_file_path = dst_file_path
+
+  def build(self) -> list[str]:
+    self.cmd.append(self.src_file_path)
+    self.flag('-o', self.dst_file_path)
+    return self.cmd
+
+  def flag(self, name: str, value=None):
+    self.cmd.append(name)
+    if value is not None:
+      self.cmd.append(value)
 
 
 def get_document_title(path: str) -> str:
@@ -30,18 +48,6 @@ def main() -> IO:
   src_dir_path = os.path.join('.', src_dir_name)
   src_files_glob = os.path.join(src_dir_path, '*.md')
 
-  cmd_template = (
-    'pandoc '
-    '-f markdown '
-    '-t html '
-    '-s '
-    '%s '
-    '-o %s '
-    '--toc '
-    '-M title="%s" '
-    '--template templates/post-template.html '
-  )
-
   if not os.path.exists(public_dir_path):
     os.mkdir(public_dir_path)
 
@@ -56,8 +62,22 @@ def main() -> IO:
     src_file_name = os.path.basename(src_file_path)
     dst_file_name = src_file_name.replace('.md', '.html')
     dst_file_path = os.path.join(posts_dir_path, dst_file_name)
-    cmd = (cmd_template % (src_file_path, dst_file_path, title)).split(" ")
-    run(cmd, stderr=DEVNULL, stdout=DEVNULL)
+
+    p = Pandoc(src_file_path, dst_file_path)
+    p.flag('-f', 'markdown')
+    p.flag('-t', 'html')
+    p.flag('-s')
+    p.flag('--toc')
+    p.flag('-M', f'title={title}')
+    p.flag('--template', 'templates/post-template.html')
+    cmd = p.build()
+
+    run(cmd)
+
+    if not os.path.exists(dst_file_path):
+      print(f'Could not build {dst_file_path}')
+      print('Exiting!')
+      exit(1)
 
     href = os.path.join('.', posts_dir_name, dst_file_name)
     anchor = f'<a href="{href}">{title}</a>'
