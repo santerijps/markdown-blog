@@ -56,8 +56,9 @@ def main() -> IO:
     src_file_name = os.path.basename(src_file_path)
     dst_file_name = src_file_name.replace('.md', '.html')
     dst_file_path = os.path.join(posts_dir_path, dst_file_name)
-    cmd = cmd_template % (src_file_path, dst_file_path, title)
+    cmd = (cmd_template % (src_file_path, dst_file_path, title)).split(" ")
     run(cmd, stderr=DEVNULL, stdout=DEVNULL)
+
     href = os.path.join('.', posts_dir_name, dst_file_name)
     anchor = f'<a href="{href}">{title}</a>'
     post_anchor_list.append(anchor)
